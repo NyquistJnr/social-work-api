@@ -37,7 +37,27 @@
       "Bash(./venv/Scripts/python.exe -m alembic revision -m \"add last login at to users\")",
       "Bash(python -c \"import app.modules.auth.service, app.core.security, app.modules.auth.dto, app.core.config\")",
       "Bash(.venv/Scripts/python -c \"import app.modules.auth.service, app.core.security, app.modules.auth.dto, app.core.config; print\\('ok'\\)\")",
-      "Bash(venv/Scripts/python -c \"import app.modules.auth.service, app.core.security, app.modules.auth.dto, app.core.config; print\\('ok'\\)\")"
+      "Bash(venv/Scripts/python -c \"import app.modules.auth.service, app.core.security, app.modules.auth.dto, app.core.config; print\\('ok'\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"import boto3, httpx\")",
+      "Bash(./venv/Scripts/pip.exe install *)",
+      "Bash(./venv/Scripts/python.exe -c \"from app.main import app; print\\('OK', len\\(app.routes\\)\\)\")",
+      "Bash(./venv/Scripts/alembic.exe revision *)",
+      "Bash(./venv/Scripts/alembic.exe upgrade *)",
+      "Bash(./venv/Scripts/python.exe -m uvicorn app.main:app --port 8123)",
+      "Bash(curl -s http://127.0.0.1:8123/openapi.json -o /tmp/openapi.json)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('/tmp/openapi.json'\\)\\); print\\(len\\(d['paths']\\)\\); [print\\(p, list\\(d['paths'][p].keys\\(\\)\\)\\) for p in d['paths'] if 'course' in p.lower\\(\\)]\")",
+      "Bash(curl -s http://127.0.0.1:8123/openapi.json -o \"C:/Users/nyqui/AppData/Local/Temp/claude/c--Users-nyqui-Work-social-workers-api/525f074c-7ec7-4fdb-9ad0-338c33c80db5/scratchpad/openapi.json\")",
+      "Bash(c:/Users/nyqui/Work/social-workers/api/venv/Scripts/python.exe -c ' *)",
+      "Bash(curl -s -X POST http://127.0.0.1:8123/courses -H 'Authorization: Bearer __TRACKED_VAR__' -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(pkill -f \"uvicorn app.main\")",
+      "Bash(taskkill //F //PID 21904)",
+      "Bash(cp .env /tmp/.env.bak)",
+      "Bash(cat)",
+      "Bash(curl -s -X POST http://127.0.0.1:8123/courses/items/__TRACKED_VAR__/document/finalize -H 'Authorization: Bearer __TRACKED_VAR__' -H 'Content-Type: application/json' -d '{\"mime_type\":\"application/pdf\",\"file_size_bytes\":12345}')",
+      "Bash(curl -s -X POST http://127.0.0.1:8123/courses/items/__TRACKED_VAR__/quiz/questions -H 'Authorization: Bearer __TRACKED_VAR__' -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(curl -s -X PATCH http://127.0.0.1:8123/courses/__TRACKED_VAR__/publish?is_published=true -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(curl -s http://127.0.0.1:8123/courses/manage/__TRACKED_VAR__ -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(curl -s -X DELETE http://127.0.0.1:8123/courses/__TRACKED_VAR__ -H 'Authorization: Bearer __TRACKED_VAR__')"
     ]
   }
 }

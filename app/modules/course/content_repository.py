@@ -1,0 +1,122 @@
+import uuid
+from typing import Sequence
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.modules.course.content_entity import (
+    CourseDocument,
+    CourseQuiz,
+    CourseQuizOption,
+    CourseQuizQuestion,
+    CourseVideo,
+)
+from app.modules.course.entity import CourseItem, CourseSection
+
+
+class CourseContentRepository:
+    """Read/write helpers for the curriculum tree (sections -> items -> video/
+    document/quiz). Kept as plain queries (no ORM `relationship()` mappings
+    exist on these entities, matching the rest of the codebase) and assembled
+    in Python by `CourseContentService`."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    # -- sections ----------------------------------------------------------
+
+    async def list_sections(self, course_id: uuid.UUID) -> Sequence[CourseSection]:
+        stmt = (
+            select(CourseSection)
+            .where(CourseSection.course_id == course_id, CourseSection.deleted_at.is_(None))
+            .order_by(CourseSection.order_index)
+        )
+        return (await self.session.execute(stmt)).scalars().all()
+
+    async def get_section(self, id: uuid.UUID) -> CourseSection | None:
+        stmt = select(CourseSection).where(CourseSection.id == id, CourseSection.deleted_at.is_(None))
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    # -- items ---------------------------------------------------------------
+
+    async def list_items_for_sections(self, section_ids: Sequence[uuid.UUID]) -> Sequence[CourseItem]:
+        if not section_ids:
+            return []
+        stmt = (
+            select(CourseItem)
+            .where(CourseItem.section_id.in_(section_ids), CourseItem.deleted_at.is_(None))
+            .order_by(CourseItem.order_index)
+        )
+        return (await self.session.execute(stmt)).scalars().all()
+
+    async def get_item(self, id: uuid.UUID) -> CourseItem | None:
+        stmt = select(CourseItem).where(CourseItem.id == id, CourseItem.deleted_at.is_(None))
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    # -- video ---------------------------------------------------------------
+
+    async def get_video_by_item(self, item_id: uuid.UUID) -> CourseVideo | None:
+        stmt = select(CourseVideo).where(CourseVideo.course_item_id == item_id)
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_videos_for_items(self, item_ids: Sequence[uuid.UUID]) -> Sequence[CourseVideo]:
+        if not item_ids:
+            return []
+        stmt = select(CourseVideo).where(CourseVideo.course_item_id.in_(item_ids))
+        return (await self.session.execute(stmt)).scalars().all()
+
+    # -- document --------------------------------------------------------------
+
+    async def get_document_by_item(self, item_id: uuid.UUID) -> CourseDocument | None:
+        stmt = select(CourseDocument).where(CourseDocument.course_item_id == item_id)
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_documents_for_items(self, item_ids: Sequence[uuid.UUID]) -> Sequence[CourseDocument]:
+        if not item_ids:
+            return []
+        stmt = select(CourseDocument).where(CourseDocument.course_item_id.in_(item_ids))
+        return (await self.session.execute(stmt)).scalars().all()
+
+    # -- quiz -------------------------------------------------------------------
+
+    async def get_quiz_by_item(self, item_id: uuid.UUID) -> CourseQuiz | None:
+        stmt = select(CourseQuiz).where(CourseQuiz.course_item_id == item_id)
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_quizzes_for_items(self, item_ids: Sequence[uuid.UUID]) -> Sequence[CourseQuiz]:
+        if not item_ids:
+            return []
+        stmt = select(CourseQuiz).where(CourseQuiz.course_item_id.in_(item_ids))
+        return (await self.session.execute(stmt)).scalars().all()
+
+    async def list_questions_for_quizzes(self, quiz_ids: Sequence[uuid.UUID]) -> Sequence[CourseQuizQuestion]:
+        if not quiz_ids:
+            return []
+        stmt = (
+            select(CourseQuizQuestion)
+            .where(CourseQuizQuestion.quiz_id.in_(quiz_ids), CourseQuizQuestion.deleted_at.is_(None))
+            .order_by(CourseQuizQuestion.order_index)
+        )
+        return (await self.session.execute(stmt)).scalars().all()
+
+    async def get_question(self, id: uuid.UUID) -> CourseQuizQuestion | None:
+        stmt = select(CourseQuizQuestion).where(
+            CourseQuizQuestion.id == id, CourseQuizQuestion.deleted_at.is_(None)
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_options_for_questions(self, question_ids: Sequence[uuid.UUID]) -> Sequence[CourseQuizOption]:
+        if not question_ids:
+            return []
+        stmt = (
+            select(CourseQuizOption)
+            .where(CourseQuizOption.question_id.in_(question_ids), CourseQuizOption.deleted_at.is_(None))
+            .order_by(CourseQuizOption.order_index)
+        )
+        return (await self.session.execute(stmt)).scalars().all()
+
+    async def get_option(self, id: uuid.UUID) -> CourseQuizOption | None:
+        stmt = select(CourseQuizOption).where(
+            CourseQuizOption.id == id, CourseQuizOption.deleted_at.is_(None)
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()

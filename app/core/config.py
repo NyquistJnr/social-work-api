@@ -38,6 +38,20 @@ class Settings(BaseSettings):
     smtp_from_name: str = "Social Workers"
     smtp_use_tls: bool = True
 
+    # Cloudflare R2 (course documents)
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = ""
+    presigned_url_expire_seconds: int = 600
+
+    # Bunny.net Stream (course videos)
+    bunny_stream_library_id: str = ""
+    bunny_stream_api_key: str = ""
+    bunny_stream_cdn_hostname: str = ""
+    bunny_tus_upload_expire_seconds: int = 3600
+    bunny_webhook_secret: str = ""
+
     @property
     def database_url(self) -> str:
         return (

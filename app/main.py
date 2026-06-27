@@ -7,6 +7,8 @@ from app.core.config import settings
 from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
 from app.modules.contact_us.router import router as contact_us_router
+from app.modules.course.router import router as course_router
+from app.modules.course.webhook_router import router as course_webhook_router
 from app.modules.health.router import router as health_router
 from app.modules.user.router import router as user_router
 
@@ -49,3 +51,5 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(admin_router)
 app.include_router(contact_us_router)
+app.include_router(course_router)
+app.include_router(course_webhook_router)

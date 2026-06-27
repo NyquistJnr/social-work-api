@@ -1,0 +1,92 @@
+import uuid
+from typing import Sequence
+
+from fastapi import HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.common.pagination import PaginationParams
+from app.common.slug import ensure_unique_slug, slugify
+from app.modules.course.dto import (
+    CourseCreateDTO,
+    CourseFilterParams,
+    CourseManageFilterParams,
+    CourseUpdateDTO,
+)
+from app.modules.course.entity import Course, CourseItem, CourseSection
+from app.modules.course.repository import CourseRepository
+from app.modules.user.entity import User, UserTypeEnum
+
+
+class CourseService:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.repository = CourseRepository(session)
+
+    def ensure_can_manage(self, course: Course, user: User) -> None:
+        if user.user_type != UserTypeEnum.ADMIN and course.instructor_id != user.id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not manage this course")
+
+    async def create(self, payload: CourseCreateDTO, instructor: User) -> Course:
+        slug = await ensure_unique_slug(self.session, Course, slugify(payload.title))
+        course = Course(**payload.model_dump(), slug=slug, instructor_id=instructor.id)
+        await self.repository.create(course)
+        await self.session.commit()
+        return course
+
+    async def list_published(
+        self, pagination: PaginationParams, filters: CourseFilterParams | None = None
+    ) -> tuple[Sequence[Course], int]:
+        return await self.repository.list_published(pagination, filters)
+
+    async def list_manage(
+        self, pagination: PaginationParams, filters: CourseManageFilterParams, current_user: User
+    ) -> tuple[Sequence[Course], int]:
+        instructor_id = None if current_user.user_type == UserTypeEnum.ADMIN else current_user.id
+        return await self.repository.list_manage(pagination, filters, instructor_id)
+
+    async def get_by_slug_published(self, slug: str) -> Course:
+        course = await self.repository.get_by_slug(slug)
+        if course is None or not course.is_published:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Course not found")
+        return course
+
+    async def get_for_manage(self, id: uuid.UUID, current_user: User) -> Course:
+        course = await self.repository.get_by_id(id)
+        if course is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Course not found")
+        self.ensure_can_manage(course, current_user)
+        return course
+
+    async def update(self, id: uuid.UUID, payload: CourseUpdateDTO, current_user: User) -> Course:
+        course = await self.get_for_manage(id, current_user)
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(course, field, value)
+        await self.repository.update(course)
+        await self.session.commit()
+        return course
+
+    async def set_published(self, id: uuid.UUID, is_published: bool, current_user: User) -> Course:
+        course = await self.get_for_manage(id, current_user)
+        if is_published:
+            item_count_stmt = (
+                select(func.count())
+                .select_from(CourseItem)
+                .join(CourseSection, CourseItem.section_id == CourseSection.id)
+                .where(CourseSection.course_id == course.id, CourseItem.deleted_at.is_(None))
+            )
+            item_count = (await self.session.execute(item_count_stmt)).scalar_one()
+            if item_count == 0:
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    "Course must have at least one curriculum item before publishing",
+                )
+        course.is_published = is_published
+        await self.repository.update(course)
+        await self.session.commit()
+        return course
+
+    async def delete(self, id: uuid.UUID, current_user: User) -> None:
+        course = await self.get_for_manage(id, current_user)
+        await self.repository.soft_delete(course, current_user.id)
+        await self.session.commit()
