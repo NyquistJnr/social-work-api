@@ -23,7 +23,12 @@
       "PowerShell(python \"C:\\\\Users\\\\nyqui\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-nyqui-Work-social-workers-api\\\\d88cce88-979b-4d57-906a-479d0cdabd4e\\\\scratchpad\\\\cleanup2.py\")",
       "Bash(./venv/Scripts/python.exe -m alembic revision -m \"add admin invite tokens and nullable password\")",
       "Bash(./venv/Scripts/python.exe -c \"import app.main\")",
-      "Bash(./venv/Scripts/python.exe -m alembic upgrade head)"
+      "Bash(./venv/Scripts/python.exe -m alembic upgrade head)",
+      "PowerShell(alembic revision --autogenerate -m \"create contact us messages table\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -m alembic revision --autogenerate -m \"create contact us messages table\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -m alembic upgrade head)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -c \"from app.main import app; print\\([r.path for r in app.routes if 'contact' in r.path]\\)\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe -m uvicorn app.main:app --port 8123)"
     ]
   }
 }
