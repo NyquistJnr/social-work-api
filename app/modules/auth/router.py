@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.api_route import NoNullAPIRoute
 from app.common.responses import ApiResponse
 from app.core.database import get_db
 from app.modules.auth.dto import (
@@ -17,7 +18,7 @@ from app.modules.auth.dto import (
 )
 from app.modules.auth.service import AuthService
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"], route_class=NoNullAPIRoute)
 
 
 @router.post(

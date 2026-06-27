@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.api_route import NoNullAPIRoute
 from app.common.responses import ApiResponse
 from app.core.database import get_db
 from app.modules.auth.dependencies import get_current_user
@@ -8,7 +9,7 @@ from app.modules.user.dto import UserReadDTO, UserUpdateDTO
 from app.modules.user.entity import User
 from app.modules.user.service import UserService
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix="/users", tags=["Users"], route_class=NoNullAPIRoute)
 
 
 @router.get("/me", response_model=ApiResponse[UserReadDTO], summary="Get the current authenticated user's profile")

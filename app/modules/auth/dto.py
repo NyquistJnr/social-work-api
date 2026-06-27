@@ -22,6 +22,11 @@ class SignUpRequestDTO(CreateDTO):
 
     @model_validator(mode="after")
     def validate_username_and_passwords(self) -> "SignUpRequestDTO":
+        if self.user_type == UserTypeEnum.ADMIN:
+            raise ValueError(
+                "Admin accounts cannot be created via sign-up; they must be invited by an existing admin"
+            )
+
         if not USERNAME_PATTERN.match(self.username.lower()):
             raise ValueError(
                 "Username must be 3-30 characters and contain only lowercase letters, "

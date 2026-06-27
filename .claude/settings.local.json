@@ -20,7 +20,10 @@
       "PowerShell(alembic revision --autogenerate -m \"add user_type to users\" 2>&1)",
       "PowerShell(alembic upgrade head 2>&1)",
       "PowerShell(python -c \"from app.main import app; print\\('import OK'\\)\")",
-      "PowerShell(python \"C:\\\\Users\\\\nyqui\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-nyqui-Work-social-workers-api\\\\d88cce88-979b-4d57-906a-479d0cdabd4e\\\\scratchpad\\\\cleanup2.py\")"
+      "PowerShell(python \"C:\\\\Users\\\\nyqui\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-nyqui-Work-social-workers-api\\\\d88cce88-979b-4d57-906a-479d0cdabd4e\\\\scratchpad\\\\cleanup2.py\")",
+      "Bash(./venv/Scripts/python.exe -m alembic revision -m \"add admin invite tokens and nullable password\")",
+      "Bash(./venv/Scripts/python.exe -c \"import app.main\")",
+      "Bash(./venv/Scripts/python.exe -m alembic upgrade head)"
     ]
   }
 }

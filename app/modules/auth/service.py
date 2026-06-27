@@ -72,7 +72,9 @@ class AuthService:
 
     async def login(self, payload: LoginRequestDTO) -> AuthSessionDTO:
         user = await self.users.get_by_email_or_username(payload.identifier)
-        if user is None or not verify_password(payload.password, user.hashed_password):
+        if user is None or user.hashed_password is None or not verify_password(
+            payload.password, user.hashed_password
+        ):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
         if not user.is_active:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been deactivated")

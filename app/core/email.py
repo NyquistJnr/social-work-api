@@ -55,5 +55,30 @@ class EmailService:
         """
         await self._send(to_email, subject, html_body)
 
+    async def send_admin_invite_email(self, to_email: str, first_name: str, invite_link: str) -> None:
+        subject = "You've been invited as an admin"
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+          <h2 style="color: #111827;">You've been invited as an admin</h2>
+          <p>Hi {first_name},</p>
+          <p>You've been invited to join Social Workers as an admin. Click the button
+          below to set up your password and activate your account. This link expires in
+          {settings.admin_invite_token_expire_minutes // 60 // 24} days.</p>
+          <p style="text-align: center; margin: 32px 0;">
+            <a href="{invite_link}"
+               style="background-color: #2563eb; color: #ffffff; padding: 12px 24px;
+                      border-radius: 6px; text-decoration: none; font-weight: bold;">
+              Set Up Password
+            </a>
+          </p>
+          <p>If the button doesn't work, copy and paste this link into your browser:</p>
+          <p style="word-break: break-all; color: #2563eb;">{invite_link}</p>
+          <p style="margin-top: 32px; color: #6b7280; font-size: 12px;">
+            Social Workers &mdash; this is an automated message, please don't reply.
+          </p>
+        </div>
+        """
+        await self._send(to_email, subject, html_body)
+
 
 email_service = EmailService()
