@@ -17,6 +17,12 @@ class GenderEnum(str, enum.Enum):
     OTHER = "OTHER"
 
 
+class UserTypeEnum(str, enum.Enum):
+    USER = "USER"
+    INSTRUCTOR = "INSTRUCTOR"
+    ADMIN = "ADMIN"
+
+
 class User(BaseEntity):
     __tablename__ = "users"
 
@@ -30,6 +36,12 @@ class User(BaseEntity):
     )
     gender: Mapped[GenderEnum | None] = mapped_column(
         Enum(GenderEnum, name="gender_enum", native_enum=True), nullable=True
+    )
+    user_type: Mapped[UserTypeEnum] = mapped_column(
+        Enum(UserTypeEnum, name="user_type_enum", native_enum=True),
+        nullable=False,
+        default=UserTypeEnum.USER,
+        server_default=UserTypeEnum.USER.value,
     )
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)

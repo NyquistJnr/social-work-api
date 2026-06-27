@@ -1,7 +1,7 @@
 from pydantic import Field
 
 from app.common.base_dto import AuditDTO, UpdateDTO
-from app.modules.user.entity import GenderEnum, PlatformEnum
+from app.modules.user.entity import GenderEnum, PlatformEnum, UserTypeEnum
 
 
 class UserReadDTO(AuditDTO):
@@ -12,6 +12,7 @@ class UserReadDTO(AuditDTO):
     phone_number: str | None = None
     platform: PlatformEnum
     gender: GenderEnum | None = None
+    user_type: UserTypeEnum
     address: str | None = None
     is_active: bool
 
