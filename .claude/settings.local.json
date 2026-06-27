@@ -34,7 +34,10 @@
       "Bash(./venv/Scripts/python.exe -m alembic current)",
       "Bash(./venv/Scripts/python.exe -m alembic revision -m \"add platform to contact us messages\")",
       "Bash(./venv/Scripts/python.exe -c \"from app.main import app; print\\('ok'\\)\")",
-      "Bash(./venv/Scripts/python.exe -m alembic revision -m \"add last login at to users\")"
+      "Bash(./venv/Scripts/python.exe -m alembic revision -m \"add last login at to users\")",
+      "Bash(python -c \"import app.modules.auth.service, app.core.security, app.modules.auth.dto, app.core.config\")",
+      "Bash(.venv/Scripts/python -c \"import app.modules.auth.service, app.core.security, app.modules.auth.dto, app.core.config; print\\('ok'\\)\")",
+      "Bash(venv/Scripts/python -c \"import app.modules.auth.service, app.core.security, app.modules.auth.dto, app.core.config; print\\('ok'\\)\")"
     ]
   }
 }

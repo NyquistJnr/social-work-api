@@ -83,7 +83,7 @@ class AuthService:
         await self.users.update(user)
         await self.session.commit()
 
-        tokens = await self._issue_token_pair(user)
+        tokens = await self._issue_token_pair(user, extended=payload.keep_logged_in)
         return AuthSessionDTO(user=UserReadDTO.model_validate(user), tokens=tokens)
 
     async def refresh(self, payload: RefreshTokenRequestDTO) -> TokenPairDTO:
@@ -137,8 +137,8 @@ class AuthService:
         await self.refresh_tokens.revoke_all_for_user(user.id)
         await self.session.commit()
 
-    async def _issue_token_pair(self, user: User) -> TokenPairDTO:
-        access_token, expires_in = create_access_token(subject=str(user.id))
+    async def _issue_token_pair(self, user: User, extended: bool = False) -> TokenPairDTO:
+        access_token, expires_in = create_access_token(subject=str(user.id), extended=extended)
 
         raw_refresh_token = generate_opaque_token()
         expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)

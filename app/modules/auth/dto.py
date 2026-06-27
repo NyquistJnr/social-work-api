@@ -42,6 +42,9 @@ class SignUpRequestDTO(CreateDTO):
 class LoginRequestDTO(BaseDTO):
     identifier: str = Field(min_length=1, description="Email address or username")
     password: str = Field(min_length=1)
+    keep_logged_in: bool = Field(
+        default=False, description="Issue a longer-lived access token"
+    )
 
 
 class ForgotPasswordRequestDTO(BaseDTO):

@@ -17,9 +17,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
-def create_access_token(subject: str, extra_claims: dict[str, Any] | None = None) -> tuple[str, int]:
+def create_access_token(
+    subject: str, extra_claims: dict[str, Any] | None = None, extended: bool = False
+) -> tuple[str, int]:
     """Returns (token, expires_in_seconds)."""
-    expires_delta = timedelta(minutes=settings.access_token_expire_minutes)
+    expire_minutes = (
+        settings.extended_access_token_expire_minutes
+        if extended
+        else settings.access_token_expire_minutes
+    )
+    expires_delta = timedelta(minutes=expire_minutes)
     expire_at = datetime.now(timezone.utc) + expires_delta
     payload: dict[str, Any] = {"sub": subject, "exp": expire_at, "type": "access"}
     if extra_claims:
