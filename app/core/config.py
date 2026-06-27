@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     password_reset_token_expire_minutes: int = 30
 
     # Frontend
-    frontend_reset_password_url: str = "http://localhost:3000/reset-password"
+    frontend_url: str = "http://localhost:3000"
 
     # SMTP (Gmail)
     smtp_host: str = "smtp.gmail.com"

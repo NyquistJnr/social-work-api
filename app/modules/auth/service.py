@@ -111,7 +111,7 @@ class AuthService:
         await self.reset_tokens.create(reset_token)
         await self.session.commit()
 
-        reset_link = f"{settings.frontend_reset_password_url}?token={raw_token}"
+        reset_link = f"{settings.frontend_url}/reset-password?token={raw_token}"
         await email_service.send_password_reset_email(user.email, user.first_name, reset_link)
 
     async def reset_password(self, payload: ResetPasswordRequestDTO) -> None:
