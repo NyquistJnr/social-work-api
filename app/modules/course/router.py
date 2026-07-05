@@ -7,7 +7,7 @@ from app.common.api_route import NoNullAPIRoute
 from app.common.pagination import PaginatedResponse, PaginationParams
 from app.common.responses import ApiResponse
 from app.core.database import get_db
-from app.modules.auth.dependencies import get_current_admin_or_instructor
+from app.modules.auth.dependencies import get_current_admin_or_instructor, get_current_user
 from app.modules.course.content_dto import (
     CourseDetailDTO,
     CourseItemCreateDTO,
@@ -127,6 +127,7 @@ async def list_manage_courses(
     return PaginatedResponse.create(
         items=[CourseReadDTO.model_validate(item) for item in items], total_items=total, params=pagination
     )
+
 
 
 @router.get(

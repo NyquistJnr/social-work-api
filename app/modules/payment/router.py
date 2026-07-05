@@ -8,7 +8,7 @@ from app.common.api_route import NoNullAPIRoute
 from app.common.responses import ApiResponse
 from app.core.database import get_db
 from app.core.qstash import verify_qstash_signature
-from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.dependencies import get_current_admin_user, get_current_user
 from app.modules.payment.schema import (
     ChargeSavedCardRequest,
     InitializePaymentRequest,
@@ -16,11 +16,13 @@ from app.modules.payment.schema import (
     SavedCardResponse,
     SubscriptionPlanResponse,
     VerifyPaymentResponse,
+    TransactionReadDTO,
 )
 from app.modules.payment.service import PaymentService
 from app.modules.payment.repository import PaymentRepository
 from app.modules.user.entity import User
 
+from app.common.pagination import PaginatedResponse, PaginationParams
 router = APIRouter(prefix="/payments", tags=["Payments"], route_class=NoNullAPIRoute)
 
 
@@ -117,3 +119,21 @@ async def list_plans(
     plans = await PaymentRepository(db).list_active_plans()
     data = [SubscriptionPlanResponse.model_validate(plan, from_attributes=True) for plan in plans]
     return ApiResponse(message="Plans retrieved", data=data)
+
+
+@router.get(
+    "/transactions",
+    response_model=PaginatedResponse[TransactionReadDTO],
+    summary="List all transactions (Admin only)",
+)
+async def list_all_transactions(
+    pagination: PaginationParams = Depends(),
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> PaginatedResponse[TransactionReadDTO]:
+    items, total = await PaymentRepository(db).list_transactions(pagination)
+    return PaginatedResponse.create(
+        items=[TransactionReadDTO.model_validate(item, from_attributes=True) for item in items],
+        total_items=total,
+        params=pagination,
+    )
