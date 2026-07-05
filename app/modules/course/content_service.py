@@ -207,6 +207,12 @@ class CourseContentService:
 
     async def delete_item(self, item_id: uuid.UUID, current_user: User) -> None:
         _, _, item = await self._authorize_item(item_id, current_user)
+
+        if item.item_type == CourseItemTypeEnum.DOCUMENT:
+            document = await self.repo.get_document_by_item(item.id)
+            if document:
+                self.r2.delete_object(document.storage_key)
+
         item.mark_deleted(current_user.id)
         await self.session.commit()
 

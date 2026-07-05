@@ -99,6 +99,12 @@ class CourseService:
     ) -> CourseThumbnailUploadResponse:
         course = await self.get_for_manage(course_id, current_user)
         r2_client = get_r2_client()
+
+        if course.thumbnail_url:
+            from app.core.config import settings
+            old_key = course.thumbnail_url.replace(f"{settings.r2_public_url.rstrip('/')}/", "")
+            r2_client.delete_object(old_key)
+
         thumbnail_key = r2_client.build_thumbnail_key(course.id, payload.file_name)
         upload_url = r2_client.generate_upload_url(thumbnail_key, payload.content_type)
         

@@ -42,6 +42,17 @@ class R2Client:
             ExpiresIn=settings.presigned_url_expire_seconds,
         )
 
+    def delete_object(self, key: str) -> None:
+        self._client.delete_object(Bucket=settings.r2_bucket_name, Key=key)
+
+    def delete_many_objects(self, keys: list[str]) -> None:
+        if not keys:
+            return
+        self._client.delete_objects(
+            Bucket=settings.r2_bucket_name,
+            Delete={"Objects": [{"Key": key} for key in keys]},
+        )
+
     def get_public_url(self, key: str) -> str:
         return f"{settings.r2_public_url.rstrip('/')}/{quote(key, safe=':/')}"
 
