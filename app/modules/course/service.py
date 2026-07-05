@@ -147,3 +147,34 @@ class CourseService:
         )
         sub_count = (await self.session.execute(sub_stmt)).scalar_one()
         return sub_count > 0
+
+    async def get_enrolled_course_ids(self, user: User, course_ids: Sequence[uuid.UUID]) -> set[uuid.UUID]:
+        if not course_ids:
+            return set()
+            
+        from app.modules.course.access_entity import UserCourseAccess
+        from app.modules.payment.entity import UserSubscription
+        from datetime import datetime, timezone
+
+        has_sub = False
+        now = datetime.now(timezone.utc)
+        sub_stmt = select(func.count()).select_from(UserSubscription).where(
+            UserSubscription.user_id == user.id,
+            UserSubscription.is_active.is_(True),
+            UserSubscription.start_date <= now,
+            UserSubscription.end_date >= now
+        )
+        if (await self.session.execute(sub_stmt)).scalar_one() > 0:
+            has_sub = True
+
+        enrolled = set()
+        if has_sub:
+            stmt = select(Course.id).where(Course.id.in_(course_ids), Course.is_exclusive.is_(False))
+            enrolled.update((await self.session.execute(stmt)).scalars().all())
+
+        access_stmt = select(UserCourseAccess.course_id).where(
+            UserCourseAccess.user_id == user.id, UserCourseAccess.course_id.in_(course_ids)
+        )
+        enrolled.update((await self.session.execute(access_stmt)).scalars().all())
+        
+        return enrolled

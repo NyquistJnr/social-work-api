@@ -393,7 +393,7 @@ class CourseContentService:
 
     # -- tree assembly for course detail endpoints ------------------------------
 
-    async def build_tree(self, course_id: uuid.UUID, manage: bool) -> list:
+    async def build_tree(self, course_id: uuid.UUID, manage: bool, enrolled: bool = False) -> list:
         sections = await self.repo.list_sections(course_id)
         section_ids = [s.id for s in sections]
         items = await self.repo.list_items_for_sections(section_ids)
@@ -423,7 +423,7 @@ class CourseContentService:
         for section in sections:
             item_dtos = [
                 self._map_item(item, videos.get(item.id), documents.get(item.id), quizzes.get(item.id),
-                               questions_by_quiz, options_by_question, manage)
+                               questions_by_quiz, options_by_question, manage, enrolled)
                 for item in items_by_section.get(section.id, [])
             ]
             section_cls = CourseSectionManageReadDTO if manage else CourseSectionReadDTO
@@ -448,7 +448,13 @@ class CourseContentService:
         questions_by_quiz: dict,
         options_by_question: dict,
         manage: bool,
+        enrolled: bool,
     ):
+        if not manage and not enrolled and not item.is_preview:
+            video = None
+            document = None
+            quiz = None
+
         video_dto = None
         if video is not None:
             video_cls = CourseVideoManageDTO if manage else CourseVideoPublicDTO

@@ -7,7 +7,7 @@ from app.common.api_route import NoNullAPIRoute
 from app.common.pagination import PaginatedResponse, PaginationParams
 from app.common.responses import ApiResponse
 from app.core.database import get_db
-from app.modules.auth.dependencies import get_current_admin_or_instructor, get_current_user
+from app.modules.auth.dependencies import get_current_admin_or_instructor, get_current_user, get_current_user_optional
 from app.modules.course.content_dto import (
     CourseDetailDTO,
     CourseItemCreateDTO,
@@ -28,6 +28,7 @@ from app.modules.course.content_dto import (
     QuizQuestionCreateDTO,
     QuizQuestionUpdateDTO,
     VideoUploadCredentialsDTO,
+    PublicCourseDetailDTO,
 )
 from app.modules.course.content_service import CourseContentService
 from app.modules.course.dto import (
@@ -38,6 +39,7 @@ from app.modules.course.dto import (
     CourseThumbnailUploadRequest,
     CourseThumbnailUploadResponse,
     CourseUpdateDTO,
+    PublicCourseReadDTO,
 )
 from app.modules.course.service import CourseService
 from app.modules.user.entity import User
@@ -82,18 +84,26 @@ async def get_thumbnail_upload_url(
 
 @router.get(
     "",
-    response_model=PaginatedResponse[CourseReadDTO],
+    response_model=PaginatedResponse[PublicCourseReadDTO],
     summary="List published courses (public)",
 )
 async def list_courses(
     pagination: PaginationParams = Depends(),
     filters: CourseFilterParams = Depends(),
+    current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
-) -> PaginatedResponse[CourseReadDTO]:
+) -> PaginatedResponse[PublicCourseReadDTO]:
     items, total = await CourseService(db).list_published(pagination, filters)
-    return PaginatedResponse.create(
-        items=[CourseReadDTO.model_validate(item) for item in items], total_items=total, params=pagination
-    )
+    
+    enrolled_ids = set()
+    if current_user and items:
+        enrolled_ids = await CourseService(db).get_enrolled_course_ids(current_user, [i.id for i in items])
+        
+    dtos = [
+        PublicCourseReadDTO(**CourseReadDTO.model_validate(item).model_dump(), is_enrolled=(item.id in enrolled_ids))
+        for item in items
+    ]
+    return PaginatedResponse.create(items=dtos, total_items=total, params=pagination)
 
 
 @router.get(
@@ -148,13 +158,27 @@ async def get_manage_course(
 
 @router.get(
     "/{slug}",
-    response_model=ApiResponse[CourseDetailDTO],
+    response_model=ApiResponse[PublicCourseDetailDTO],
     summary="Get a published course by slug (public)",
 )
-async def get_course_by_slug(slug: str, db: AsyncSession = Depends(get_db)) -> ApiResponse[CourseDetailDTO]:
+async def get_course_by_slug(
+    slug: str, 
+    current_user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db)
+) -> ApiResponse[PublicCourseDetailDTO]:
     course = await CourseService(db).get_by_slug_published(slug)
-    sections = await CourseContentService(db).build_tree(course.id, manage=False)
-    data = CourseDetailDTO(**CourseReadDTO.model_validate(course).model_dump(), sections=sections)
+    
+    is_enrolled = False
+    if current_user:
+        enrolled_ids = await CourseService(db).get_enrolled_course_ids(current_user, [course.id])
+        is_enrolled = course.id in enrolled_ids
+        
+    sections = await CourseContentService(db).build_tree(course.id, manage=False, enrolled=is_enrolled)
+    data = PublicCourseDetailDTO(
+        **CourseReadDTO.model_validate(course).model_dump(), 
+        is_enrolled=is_enrolled, 
+        sections=sections
+    )
     return ApiResponse(message="Course retrieved successfully", data=data)
 
 

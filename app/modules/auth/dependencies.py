@@ -40,6 +40,29 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    if credentials is None:
+        return None
+
+    try:
+        payload = decode_access_token(credentials.credentials)
+        if payload.get("type") != "access":
+            return None
+        user_id = uuid.UUID(payload["sub"])
+    except (jwt.PyJWTError, ValueError, KeyError):
+        return None
+
+    user = await UserRepository(db).get_by_id(user_id)
+    if user is None or not user.is_active:
+        return None
+
+    return user
+
+
+
 async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
     if current_user.user_type != UserTypeEnum.ADMIN:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")

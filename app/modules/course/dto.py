@@ -55,6 +55,11 @@ class CourseReadDTO(AuditDTO):
     is_exclusive: bool
 
 
+class PublicCourseReadDTO(CourseReadDTO):
+    is_enrolled: bool = False
+
+
+
 class CourseFilterParams:
     """Public listing filters - always scoped to published courses by the service."""
 

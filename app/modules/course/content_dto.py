@@ -4,7 +4,7 @@ from pydantic import Field
 
 from app.common.base_dto import AuditDTO, BaseDTO, CreateDTO, UpdateDTO
 from app.modules.course.content_entity import VideoStatusEnum
-from app.modules.course.dto import CourseReadDTO
+from app.modules.course.dto import CourseReadDTO, PublicCourseReadDTO
 from app.modules.course.entity import CourseItemTypeEnum
 
 # ---------------------------------------------------------------------------
@@ -227,5 +227,9 @@ class CourseDetailDTO(CourseReadDTO):
     sections: list[CourseSectionReadDTO] = Field(default_factory=list)
 
 
+from app.modules.course.dto import CourseReadDTO, PublicCourseReadDTO
 class CourseManageDetailDTO(CourseReadDTO):
     sections: list[CourseSectionManageReadDTO] = Field(default_factory=list)
+
+class PublicCourseDetailDTO(PublicCourseReadDTO):
+    sections: list[CourseSectionReadDTO] = Field(default_factory=list)
