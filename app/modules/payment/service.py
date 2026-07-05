@@ -10,6 +10,7 @@ from app.modules.course.repository import CourseRepository
 from app.modules.payment.entity import (
     PaymentGatewayEnum,
     SavedCard,
+    SubscriptionPlan,
     Transaction,
     TransactionStatusEnum,
     TransactionTypeEnum,
@@ -17,7 +18,7 @@ from app.modules.payment.entity import (
 )
 from app.modules.payment.paystack_gateway import PaystackGateway
 from app.modules.payment.repository import PaymentRepository
-from app.modules.payment.schema import ChargeSavedCardRequest, InitializePaymentRequest
+from app.modules.payment.schema import ChargeSavedCardRequest, InitializePaymentRequest, SubscriptionPlanCreateDTO, SubscriptionPlanUpdateDTO
 from app.modules.user.entity import User
 
 
@@ -34,6 +35,28 @@ class PaymentService:
 
     def _generate_reference(self) -> str:
         return f"TXN_{secrets.token_hex(12).upper()}"
+
+    async def create_plan(self, payload: SubscriptionPlanCreateDTO) -> SubscriptionPlan:
+        plan = SubscriptionPlan(**payload.model_dump())
+        self.session.add(plan)
+        await self.session.commit()
+        return plan
+
+    async def update_plan(self, plan_id: uuid.UUID, payload: SubscriptionPlanUpdateDTO) -> SubscriptionPlan:
+        plan = await self.repo.get_plan_by_id(plan_id)
+        if not plan:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan not found")
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(plan, field, value)
+        await self.session.commit()
+        return plan
+
+    async def delete_plan(self, plan_id: uuid.UUID) -> None:
+        plan = await self.repo.get_plan_by_id(plan_id)
+        if not plan:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan not found")
+        plan.is_active = False # Soft delete
+        await self.session.commit()
 
     async def initialize_payment(self, payload: InitializePaymentRequest, user: User) -> dict:
         amount = 0.0

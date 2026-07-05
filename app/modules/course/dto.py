@@ -19,6 +19,7 @@ class CourseCreateDTO(CreateDTO):
     is_free: bool = True
     price: float | None = Field(default=None, ge=0)
     thumbnail_url: str | None = Field(default=None, max_length=1000)
+    is_exclusive: bool = False
 
 
 class CourseUpdateDTO(UpdateDTO):
@@ -33,6 +34,7 @@ class CourseUpdateDTO(UpdateDTO):
     is_free: bool | None = None
     price: float | None = Field(default=None, ge=0)
     thumbnail_url: str | None = Field(default=None, max_length=1000)
+    is_exclusive: bool | None = None
 
 
 class CourseReadDTO(AuditDTO):
@@ -50,6 +52,7 @@ class CourseReadDTO(AuditDTO):
     thumbnail_url: str | None
     instructor_id: uuid.UUID
     is_published: bool
+    is_exclusive: bool
 
 
 class CourseFilterParams:

@@ -15,6 +15,8 @@ from app.modules.payment.schema import (
     InitializePaymentResponse,
     SavedCardResponse,
     SubscriptionPlanResponse,
+    SubscriptionPlanCreateDTO,
+    SubscriptionPlanUpdateDTO,
     VerifyPaymentResponse,
     TransactionReadDTO,
 )
@@ -119,6 +121,50 @@ async def list_plans(
     plans = await PaymentRepository(db).list_active_plans()
     data = [SubscriptionPlanResponse.model_validate(plan, from_attributes=True) for plan in plans]
     return ApiResponse(message="Plans retrieved", data=data)
+
+
+@router.post(
+    "/plans",
+    response_model=ApiResponse[SubscriptionPlanResponse],
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new subscription plan (Admin only)",
+)
+async def create_plan(
+    payload: SubscriptionPlanCreateDTO,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[SubscriptionPlanResponse]:
+    plan = await PaymentService(db).create_plan(payload)
+    return ApiResponse(message="Plan created successfully", data=SubscriptionPlanResponse.model_validate(plan, from_attributes=True))
+
+
+@router.patch(
+    "/plans/{plan_id}",
+    response_model=ApiResponse[SubscriptionPlanResponse],
+    summary="Update a subscription plan (Admin only)",
+)
+async def update_plan(
+    plan_id: uuid.UUID,
+    payload: SubscriptionPlanUpdateDTO,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[SubscriptionPlanResponse]:
+    plan = await PaymentService(db).update_plan(plan_id, payload)
+    return ApiResponse(message="Plan updated successfully", data=SubscriptionPlanResponse.model_validate(plan, from_attributes=True))
+
+
+@router.delete(
+    "/plans/{plan_id}",
+    response_model=ApiResponse[None],
+    summary="Delete a subscription plan (Admin only)",
+)
+async def delete_plan(
+    plan_id: uuid.UUID,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[None]:
+    await PaymentService(db).delete_plan(plan_id)
+    return ApiResponse(message="Plan deleted successfully")
 
 
 @router.get(

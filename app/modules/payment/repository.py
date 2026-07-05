@@ -40,3 +40,35 @@ class PaymentRepository:
         stmt = stmt.offset(pagination.offset).limit(pagination.limit)
         items = (await self.session.execute(stmt)).scalars().all()
         return items, total
+
+    async def list_user_transactions(
+        self, user_id: uuid.UUID, pagination
+    ) -> tuple[Sequence[Transaction], int]:
+        from sqlalchemy import func
+        stmt = select(Transaction).where(Transaction.user_id == user_id).order_by(Transaction.created_at.desc())
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        stmt = stmt.offset(pagination.offset).limit(pagination.limit)
+        items = (await self.session.execute(stmt)).scalars().all()
+        return items, total
+
+    async def list_course_transactions_with_users(
+        self, course_id: uuid.UUID, pagination
+    ) -> tuple[Sequence[tuple[Transaction, "User"]], int]:
+        from sqlalchemy import func
+        from app.modules.user.entity import User
+        from app.modules.payment.entity import TransactionTypeEnum
+        stmt = (
+            select(Transaction, User)
+            .join(User, Transaction.user_id == User.id)
+            .where(Transaction.related_id == course_id)
+            .where(Transaction.transaction_type == TransactionTypeEnum.COURSE_PURCHASE)
+            .order_by(Transaction.created_at.desc())
+        )
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        stmt = stmt.offset(pagination.offset).limit(pagination.limit)
+        items = (await self.session.execute(stmt)).all()
+        return items, total
