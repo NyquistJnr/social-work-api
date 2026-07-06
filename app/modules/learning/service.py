@@ -18,6 +18,7 @@ from app.modules.learning.dto import (
     QuizQuestionDTO,
     QuizResultDTO,
 )
+from app.common.pagination import PaginationParams
 from app.modules.learning.repository import LearningRepository
 from app.modules.payment.entity import UserSubscription
 from app.modules.learning.entity import UserItemProgress
@@ -83,8 +84,8 @@ class LearningService:
 
         return {"message": "Successfully enrolled"}
 
-    async def list_enrolled_courses(self, user_id: uuid.UUID) -> list[EnrolledCourseDTO]:
-        records = await self.repo.get_enrolled_courses_with_progress(user_id)
+    async def list_enrolled_courses(self, user_id: uuid.UUID, pagination: PaginationParams) -> tuple[list[EnrolledCourseDTO], int]:
+        records, total = await self.repo.get_enrolled_courses_with_progress(user_id, pagination)
         result = []
         for course, progress in records:
             dto = EnrolledCourseDTO(
@@ -94,7 +95,7 @@ class LearningService:
                 is_enrolled=True
             )
             result.append(dto)
-        return result
+        return result, total
 
     async def get_curriculum(self, user_id: uuid.UUID, course_id: uuid.UUID) -> CourseCurriculumDTO:
         access = await self.repo.get_user_course_access(user_id, course_id)

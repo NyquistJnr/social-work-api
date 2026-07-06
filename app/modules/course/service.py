@@ -148,9 +148,9 @@ class CourseService:
         sub_count = (await self.session.execute(sub_stmt)).scalar_one()
         return sub_count > 0
 
-    async def get_enrolled_course_ids(self, user: User, course_ids: Sequence[uuid.UUID]) -> set[uuid.UUID]:
+    async def get_course_access_details(self, user: User, course_ids: Sequence[uuid.UUID]) -> tuple[set[uuid.UUID], set[uuid.UUID]]:
         if not course_ids:
-            return set()
+            return set(), set()
             
         from app.modules.course.access_entity import UserCourseAccess
         from app.modules.payment.entity import UserSubscription
@@ -168,13 +168,16 @@ class CourseService:
             has_sub = True
 
         enrolled = set()
-        if has_sub:
-            stmt = select(Course.id).where(Course.id.in_(course_ids), Course.is_exclusive.is_(False))
-            enrolled.update((await self.session.execute(stmt)).scalars().all())
-
+        accessible = set()
+        
         access_stmt = select(UserCourseAccess.course_id).where(
             UserCourseAccess.user_id == user.id, UserCourseAccess.course_id.in_(course_ids)
         )
         enrolled.update((await self.session.execute(access_stmt)).scalars().all())
+        accessible.update(enrolled)
+
+        if has_sub:
+            stmt = select(Course.id).where(Course.id.in_(course_ids), Course.is_exclusive.is_(False))
+            accessible.update((await self.session.execute(stmt)).scalars().all())
         
-        return enrolled
+        return enrolled, accessible

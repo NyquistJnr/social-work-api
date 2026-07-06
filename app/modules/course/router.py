@@ -93,17 +93,22 @@ async def list_courses(
     current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ) -> PaginatedResponse[PublicCourseReadDTO]:
-    items, total = await CourseService(db).list_published(pagination, filters)
+    service = CourseService(db)
+    items, total = await service.list_published(pagination, filters)
     
-    enrolled_ids = set()
-    if current_user and items:
-        enrolled_ids = await CourseService(db).get_enrolled_course_ids(current_user, [i.id for i in items])
-        
-    dtos = [
-        PublicCourseReadDTO(**CourseReadDTO.model_validate(item).model_dump(), is_enrolled=(item.id in enrolled_ids))
-        for item in items
-    ]
-    return PaginatedResponse.create(items=dtos, total_items=total, params=pagination)
+    data = PaginatedResponse.create(
+        items=[PublicCourseReadDTO.model_validate(c, from_attributes=True) for c in items],
+        total_items=total,
+        params=pagination,
+    )
+
+    if current_user:
+        enrolled_ids, access_ids = await service.get_course_access_details(current_user, [c.id for c in items])
+        for item in data.data:
+            item.is_enrolled = item.id in enrolled_ids
+            item.has_access = item.id in access_ids
+            
+    return data
 
 
 @router.get(
@@ -166,20 +171,26 @@ async def get_course_by_slug(
     current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ) -> ApiResponse[PublicCourseDetailDTO]:
-    course = await CourseService(db).get_by_slug_published(slug)
+    service = CourseService(db)
+    course = await service.get_by_slug_published(slug)
+    data = PublicCourseReadDTO.model_validate(course, from_attributes=True)
     
     is_enrolled = False
+    has_access = False
     if current_user:
-        enrolled_ids = await CourseService(db).get_enrolled_course_ids(current_user, [course.id])
+        enrolled_ids, access_ids = await service.get_course_access_details(current_user, [course.id])
         is_enrolled = course.id in enrolled_ids
+        has_access = course.id in access_ids
+        data.is_enrolled = is_enrolled
+        data.has_access = has_access
         
     sections = await CourseContentService(db).build_tree(course.id, manage=False, enrolled=is_enrolled)
-    data = PublicCourseDetailDTO(
-        **CourseReadDTO.model_validate(course).model_dump(), 
-        is_enrolled=is_enrolled, 
+    
+    response_data = PublicCourseDetailDTO(
+        **data.model_dump(), 
         sections=sections
     )
-    return ApiResponse(message="Course retrieved successfully", data=data)
+    return ApiResponse(message="Course retrieved successfully", data=response_data)
 
 
 @router.patch(

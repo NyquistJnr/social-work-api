@@ -214,6 +214,21 @@ class PaymentService:
             )
             self.session.add(access)
             
+            from app.modules.learning.entity import UserCourseProgress
+            from sqlalchemy import select
+            
+            stmt = select(UserCourseProgress).where(
+                UserCourseProgress.user_id == transaction.user_id,
+                UserCourseProgress.course_id == transaction.related_id
+            )
+            existing_progress = (await self.session.execute(stmt)).scalar_one_or_none()
+            if not existing_progress:
+                progress = UserCourseProgress(
+                    user_id=transaction.user_id,
+                    course_id=transaction.related_id
+                )
+                self.session.add(progress)
+            
         elif transaction.transaction_type == TransactionTypeEnum.SUBSCRIPTION:
             plan = await self.repo.get_plan_by_id(transaction.related_id)
             if plan:

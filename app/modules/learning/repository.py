@@ -5,6 +5,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.common.pagination import PaginationParams
+
 from app.modules.course.access_entity import UserCourseAccess
 from app.modules.course.entity import Course, CourseItem, CourseSection
 from app.modules.learning.entity import QuizAttempt, UserCourseProgress, UserItemProgress
@@ -101,7 +103,7 @@ class LearningRepository:
         result = await self.session.execute(stmt)
         return result.scalar() or 0
 
-    async def get_enrolled_courses_with_progress(self, user_id: uuid.UUID) -> list[tuple[Course, UserCourseProgress]]:
+    async def get_enrolled_courses_with_progress(self, user_id: uuid.UUID, pagination: "PaginationParams") -> tuple[list[tuple[Course, UserCourseProgress]], int]:
         stmt = (
             select(Course, UserCourseProgress)
             .join(UserCourseProgress, Course.id == UserCourseProgress.course_id)
@@ -111,10 +113,14 @@ class LearningRepository:
                 UserCourseProgress.user_id == user_id,
                 Course.deleted_at.is_(None)
             )
-            .order_by(UserCourseProgress.last_accessed_at.desc().nullslast())
         )
+        total_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.session.execute(total_stmt)).scalar_one()
+
+        stmt = stmt.order_by(UserCourseProgress.last_accessed_at.desc().nullslast())
+        stmt = stmt.limit(pagination.limit).offset(pagination.offset)
         result = await self.session.execute(stmt)
-        return result.all()  # type: ignore
+        return result.all(), total
 
     async def get_user_course_access(self, user_id: uuid.UUID, course_id: uuid.UUID) -> UserCourseAccess | None:
         stmt = select(UserCourseAccess).where(

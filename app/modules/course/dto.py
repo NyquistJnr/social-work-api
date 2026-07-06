@@ -57,6 +57,7 @@ class CourseReadDTO(AuditDTO):
 
 class PublicCourseReadDTO(CourseReadDTO):
     is_enrolled: bool = False
+    has_access: bool = False
 
 
 

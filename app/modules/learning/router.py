@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.api_route import NoNullAPIRoute
 from app.common.responses import ApiResponse
+from app.common.pagination import PaginatedResponse, PaginationParams
 from app.core.database import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.learning.dto import (
@@ -37,16 +38,17 @@ async def enroll_course(
 
 @router.get(
     "/courses",
-    response_model=ApiResponse[list[EnrolledCourseDTO]],
+    response_model=PaginatedResponse[EnrolledCourseDTO],
     summary="List enrolled courses with progress",
 )
 async def list_enrolled_courses(
+    pagination: PaginationParams = Depends(),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> ApiResponse[list[EnrolledCourseDTO]]:
+) -> PaginatedResponse[EnrolledCourseDTO]:
     service = LearningService(db)
-    data = await service.list_enrolled_courses(current_user.id)
-    return ApiResponse(message="Enrolled courses retrieved successfully", data=data)
+    items, total = await service.list_enrolled_courses(current_user.id, pagination)
+    return PaginatedResponse.create(items=items, total_items=total, params=pagination)
 
 
 @router.get(
