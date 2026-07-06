@@ -199,7 +199,14 @@ class PaymentService:
             metadata = transaction.gateway_response.get("metadata", {}) if transaction.gateway_response else {}
             auth_data = verify_result.get("authorization")
             
-            if metadata.get("save_card") and auth_data and auth_data.get("reusable"):
+            save_card_val = metadata.get("save_card")
+            should_save = False
+            if isinstance(save_card_val, str):
+                should_save = save_card_val.lower() in ("true", "1", "yes")
+            else:
+                should_save = bool(save_card_val)
+            
+            if should_save and auth_data and auth_data.get("reusable"):
                 await self._save_card(transaction.user_id, transaction.gateway, auth_data)
 
         await self.session.commit()
@@ -247,7 +254,7 @@ class PaymentService:
         signature = auth_data.get("signature")
         if signature:
             from sqlalchemy import select
-            stmt = select(SavedCard).where(SavedCard.signature == signature)
+            stmt = select(SavedCard).where(SavedCard.signature == signature, SavedCard.user_id == user_id)
             existing = (await self.session.execute(stmt)).scalar_one_or_none()
             if existing:
                 return existing
@@ -256,11 +263,11 @@ class PaymentService:
             user_id=user_id,
             gateway=gateway,
             authorization_code=auth_data["authorization_code"],
-            last4=auth_data.get("last4", "XXXX"),
-            exp_month=auth_data.get("exp_month", "XX"),
-            exp_year=auth_data.get("exp_year", "XXXX"),
-            card_type=auth_data.get("card_type", "unknown"),
-            bank=auth_data.get("bank"),
+            last4=str(auth_data.get("last4", "XXXX")),
+            exp_month=str(auth_data.get("exp_month", "XX")),
+            exp_year=str(auth_data.get("exp_year", "XXXX")),
+            card_type=str(auth_data.get("card_type", "unknown")),
+            bank=str(auth_data.get("bank", "")) if auth_data.get("bank") else None,
             signature=signature,
         )
         self.session.add(card)

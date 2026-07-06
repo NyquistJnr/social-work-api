@@ -91,4 +91,4 @@ class SavedCard(BaseEntity):
     exp_year: Mapped[str] = mapped_column(String(4), nullable=False)
     card_type: Mapped[str] = mapped_column(String(50), nullable=False)
     bank: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    signature: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
+    signature: Mapped[str | None] = mapped_column(String(255), nullable=True)
