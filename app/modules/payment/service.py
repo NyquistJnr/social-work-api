@@ -20,6 +20,8 @@ from app.modules.payment.entity import (
 from app.modules.payment.paystack_gateway import PaystackGateway
 from app.modules.payment.repository import PaymentRepository
 from app.modules.payment.schema import ChargeSavedCardRequest, InitializePaymentRequest, SubscriptionPlanCreateDTO, SubscriptionPlanUpdateDTO
+from app.modules.user.activity_entity import ActivityTypeEnum
+from app.modules.user.activity_service import ActivityService
 from app.modules.user.entity import User
 
 
@@ -28,6 +30,7 @@ class PaymentService:
         self.session = session
         self.repo = PaymentRepository(session)
         self.course_repo = CourseRepository(session)
+        self.activity_service = ActivityService(session)
         
     def _get_gateway(self, gateway_type: PaymentGatewayEnum):
         if gateway_type == PaymentGatewayEnum.PAYSTACK:
@@ -236,6 +239,13 @@ class PaymentService:
                 )
                 self.session.add(progress)
             
+            course = await self.course_repo.get_by_id(transaction.related_id)
+            await self.activity_service.log_activity(
+                transaction.user_id,
+                ActivityTypeEnum.PAYMENT_SUCCESSFUL,
+                {"transaction_type": "COURSE_PURCHASE", "course_id": str(transaction.related_id), "course_title": course.title if course else "Unknown", "amount": float(transaction.amount)}
+            )
+            
         elif transaction.transaction_type == TransactionTypeEnum.SUBSCRIPTION:
             plan = await self.repo.get_plan_by_id(transaction.related_id)
             if plan:
@@ -249,6 +259,12 @@ class PaymentService:
                     is_active=True
                 )
                 self.session.add(subscription)
+                
+                await self.activity_service.log_activity(
+                    transaction.user_id,
+                    ActivityTypeEnum.PAYMENT_SUCCESSFUL,
+                    {"transaction_type": "SUBSCRIPTION", "plan_id": str(plan.id), "plan_name": plan.name, "amount": float(transaction.amount)}
+                )
 
     async def _save_card(self, user_id: uuid.UUID, gateway: PaymentGatewayEnum, auth_data: dict):
         signature = auth_data.get("signature")

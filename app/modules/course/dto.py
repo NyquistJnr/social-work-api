@@ -56,6 +56,8 @@ class CourseReadDTO(AuditDTO):
     is_exclusive: bool
     is_featured: bool
     featured_order: int | None
+    average_rating: float
+    total_reviews: int
 
 class SetFeaturedCoursesDTO(BaseModel):
     course_ids: list[uuid.UUID]

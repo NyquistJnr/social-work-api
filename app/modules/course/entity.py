@@ -63,6 +63,8 @@ class Course(BaseEntity):
     is_exclusive: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     featured_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    average_rating: Mapped[float] = mapped_column(Numeric(3, 2), default=0.0, server_default="0.0")
+    total_reviews: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
 class CourseCatalog(BaseEntity):

@@ -22,6 +22,8 @@ from app.common.pagination import PaginationParams
 from app.modules.learning.repository import LearningRepository
 from app.modules.payment.entity import UserSubscription
 from app.modules.learning.entity import UserItemProgress
+from app.modules.user.activity_entity import ActivityTypeEnum
+from app.modules.user.activity_service import ActivityService
 
 
 class LearningService:
@@ -30,6 +32,7 @@ class LearningService:
         self.repo = LearningRepository(session)
         self.course_repo = CourseRepository(session)
         self.content_repo = CourseContentRepository(session)
+        self.activity_service = ActivityService(session)
 
     async def _has_active_subscription(self, user_id: uuid.UUID) -> bool:
         stmt = select(UserSubscription).where(
@@ -80,6 +83,13 @@ class LearningService:
 
         await self.repo.grant_course_access(user_id, course_id, granted_via)
         await self.repo.create_user_course_progress(user_id, course_id)
+        
+        await self.activity_service.log_activity(
+            user_id,
+            ActivityTypeEnum.COURSE_ENROLLED,
+            {"course_id": str(course_id), "course_title": course.title}
+        )
+        
         await self.session.commit()
 
         return {"message": "Successfully enrolled"}
@@ -247,6 +257,14 @@ class LearningService:
 
         await self.repo.mark_item_completed(user_id, item_id)
         await self._recalculate_progress(user_id, course_id)
+        
+        course = await self.course_repo.get_by_id(course_id)
+        await self.activity_service.log_activity(
+            user_id,
+            ActivityTypeEnum.QUIZ_COMPLETED,
+            {"course_id": str(course_id), "course_title": course.title if course else "Unknown", "item_id": str(item_id), "item_title": item.title, "passed": passed, "score": score_percent}
+        )
+        
         await self.session.commit()
 
         return QuizResultDTO(

@@ -71,6 +71,12 @@ class CourseService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Course not found")
         return course
 
+    async def get_by_id(self, id: uuid.UUID) -> Course:
+        course = await self.repository.get_by_id(id)
+        if course is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Course not found")
+        return course
+
     async def get_for_manage(self, id: uuid.UUID, current_user: User) -> Course:
         course = await self.repository.get_by_id(id)
         if course is None:
