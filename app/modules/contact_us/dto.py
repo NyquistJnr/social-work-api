@@ -12,7 +12,7 @@ class ContactUsCreateDTO(CreateDTO):
     full_name: str = Field(min_length=1, max_length=200)
     email: EmailStr
     phone_number: str = Field(min_length=1, max_length=20)
-    company_name: str = Field(min_length=1, max_length=200)
+    company_name: str | None = Field(default=None, max_length=200)
     message: str = Field(min_length=1)
     platform: PlatformEnum
     category: ContactUsCategoryEnum | None = None
@@ -23,7 +23,7 @@ class ContactUsReadDTO(AuditDTO):
     full_name: str
     email: str
     phone_number: str
-    company_name: str
+    company_name: str | None
     message: str
     platform: PlatformEnum
     category: ContactUsCategoryEnum | None = None
