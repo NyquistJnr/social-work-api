@@ -31,11 +31,15 @@ async def verify_qstash_signature(request: Request) -> bytes:
         next_signing_key=settings.qstash_next_signing_key,
     )
     
+    # Railway terminates SSL, so request.url might be 'http://'. QStash signed 'https://'.
+    # We must force 'https://' for the signature validation to match if it's deployed.
+    url_str = str(request.url).replace("http://", "https://") if "localhost" not in str(request.url) else str(request.url)
+    
     try:
         receiver.verify(
             body=body.decode("utf-8"),
             signature=signature,
-            url=str(request.url)
+            url=url_str
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid QStash signature: {str(e)}")
