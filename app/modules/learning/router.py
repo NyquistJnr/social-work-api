@@ -14,6 +14,7 @@ from app.modules.learning.dto import (
     LearningItemContentDTO,
     QuizResultDTO,
     QuizSubmitDTO,
+    UserQuizDTO,
 )
 from app.modules.learning.service import LearningService
 from app.modules.user.entity import User
@@ -114,3 +115,21 @@ async def submit_quiz(
     data = await service.submit_quiz(current_user.id, course_id, item_id, payload.answers)
     message = "Quiz passed successfully" if data.passed else "Quiz failed, please try again"
     return ApiResponse(message=message, data=data)
+
+
+@router.get(
+    "/quizzes/me",
+    response_model=PaginatedResponse[UserQuizDTO],
+    summary="List all quizzes available to the user with their status",
+)
+async def list_my_quizzes(
+    status: str | None = None,
+    course_id: uuid.UUID | None = None,
+    pagination: PaginationParams = Depends(),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> PaginatedResponse[UserQuizDTO]:
+    service = LearningService(db)
+    items, total = await service.list_user_quizzes(current_user.id, pagination, status, course_id)
+    return PaginatedResponse.create(items=items, total_items=total, params=pagination)
+

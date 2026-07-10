@@ -212,6 +212,35 @@ async def list_all_transactions(
 
 
 @router.get(
+    "/transactions/me",
+    response_model=PaginatedResponse[TransactionReadDTO],
+    summary="List current user's transactions",
+)
+async def list_my_transactions(
+    pagination: PaginationParams = Depends(),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> PaginatedResponse[TransactionReadDTO]:
+    items, total = await PaymentRepository(db).list_user_transactions(current_user.id, pagination)
+    
+    result_items = []
+    for transaction, user in items:
+        from app.modules.user.dto import UserReadDTO
+        dto = TransactionReadDTO(
+            **TransactionReadDTO.model_validate(transaction, from_attributes=True).model_dump(exclude={'user'}),
+            user=UserReadDTO.model_validate(user, from_attributes=True)
+        )
+        result_items.append(dto)
+        
+    return PaginatedResponse.create(
+        items=result_items,
+        total_items=total,
+        params=pagination,
+    )
+
+
+
+@router.get(
     "/subscriptions/current",
     response_model=ApiResponse[CurrentSubscriptionResponse | None],
     summary="Get user's current subscription",

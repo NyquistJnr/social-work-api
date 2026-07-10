@@ -67,3 +67,21 @@ class QuizResultDTO(BaseDTO):
     score: float
     passed: bool
     correct_answers: dict[uuid.UUID, list[uuid.UUID]]  # Question ID -> List of correct Option IDs
+
+from enum import Enum
+from datetime import datetime
+
+class UserQuizStatusEnum(str, Enum):
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    NOT_STARTED = "NOT_STARTED"
+
+class UserQuizDTO(BaseDTO):
+    item_id: uuid.UUID
+    title: str
+    course_id: uuid.UUID
+    course_title: str
+    status: UserQuizStatusEnum
+    score: float | None = None
+    attempted_at: datetime | None = None
+

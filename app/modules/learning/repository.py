@@ -135,3 +135,69 @@ class LearningRepository:
         self.session.add(access)
         await self.session.flush()
         return access
+
+    async def list_user_quizzes(
+        self, 
+        user_id: uuid.UUID, 
+        pagination: PaginationParams,
+        status_filter: str | None = None,
+        course_id: uuid.UUID | None = None
+    ):
+        from app.modules.course.entity import Course, CourseSection, CourseItem, CourseItemTypeEnum
+        from app.modules.course.access_entity import UserCourseAccess
+        from sqlalchemy.orm import aliased
+        
+        subq = (
+            select(
+                QuizAttempt.item_id,
+                func.max(QuizAttempt.created_at).label("latest_attempt_at")
+            )
+            .where(QuizAttempt.user_id == user_id)
+            .group_by(QuizAttempt.item_id)
+            .subquery()
+        )
+        
+        latest_attempt = aliased(QuizAttempt)
+        
+        stmt = (
+            select(CourseItem, Course, latest_attempt)
+            .join(CourseSection, CourseItem.section_id == CourseSection.id)
+            .join(Course, CourseSection.course_id == Course.id)
+            .join(UserCourseAccess, UserCourseAccess.course_id == Course.id)
+            .outerjoin(
+                subq,
+                CourseItem.id == subq.c.item_id
+            )
+            .outerjoin(
+                latest_attempt,
+                (latest_attempt.item_id == CourseItem.id) & 
+                (latest_attempt.user_id == user_id) &
+                (latest_attempt.created_at == subq.c.latest_attempt_at)
+            )
+            .where(
+                UserCourseAccess.user_id == user_id,
+                CourseItem.item_type == CourseItemTypeEnum.QUIZ,
+                CourseItem.deleted_at.is_(None),
+                CourseSection.deleted_at.is_(None),
+                Course.deleted_at.is_(None)
+            )
+        )
+        
+        if course_id:
+            stmt = stmt.where(Course.id == course_id)
+            
+        if status_filter:
+            status_filter = status_filter.upper()
+            if status_filter == "PASSED":
+                stmt = stmt.where(latest_attempt.passed.is_(True))
+            elif status_filter == "FAILED":
+                stmt = stmt.where(latest_attempt.passed.is_(False))
+            elif status_filter == "NOT_STARTED":
+                stmt = stmt.where(latest_attempt.id.is_(None))
+                
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.session.execute(count_stmt)).scalar_one()
+        
+        stmt = stmt.order_by(CourseItem.created_at.desc()).limit(pagination.limit).offset(pagination.offset)
+        result = await self.session.execute(stmt)
+        return result.all(), total

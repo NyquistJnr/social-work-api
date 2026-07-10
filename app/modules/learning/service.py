@@ -254,3 +254,38 @@ class LearningService:
             passed=passed,
             correct_answers=correct_answers
         )
+
+    async def list_user_quizzes(
+        self,
+        user_id: uuid.UUID,
+        pagination: PaginationParams,
+        status_filter: str | None = None,
+        course_id: uuid.UUID | None = None
+    ) -> tuple[list["UserQuizDTO"], int]:
+        from app.modules.learning.dto import UserQuizDTO, UserQuizStatusEnum
+        
+        items, total = await self.repo.list_user_quizzes(user_id, pagination, status_filter, course_id)
+        
+        result = []
+        for course_item, course, latest_attempt in items:
+            if latest_attempt:
+                status = UserQuizStatusEnum.PASSED if latest_attempt.passed else UserQuizStatusEnum.FAILED
+                score = float(latest_attempt.score) if latest_attempt.score is not None else None
+                attempted_at = latest_attempt.created_at
+            else:
+                status = UserQuizStatusEnum.NOT_STARTED
+                score = None
+                attempted_at = None
+                
+            result.append(UserQuizDTO(
+                item_id=course_item.id,
+                title=course_item.title,
+                course_id=course.id,
+                course_title=course.title,
+                status=status,
+                score=score,
+                attempted_at=attempted_at
+            ))
+            
+        return result, total
+
