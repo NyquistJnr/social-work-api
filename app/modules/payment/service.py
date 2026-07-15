@@ -181,7 +181,7 @@ class PaymentService:
         return {"status": transaction.status.value, "reference": reference}
 
     async def verify_transaction(self, reference: str) -> Transaction:
-        transaction = await self.repo.get_transaction_by_reference(reference)
+        transaction = await self.repo.get_transaction_by_reference(reference, for_update=True)
         if not transaction:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Transaction not found")
 

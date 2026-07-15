@@ -22,8 +22,10 @@ class PaymentRepository:
         stmt = select(SubscriptionPlan)
         return (await self.session.execute(stmt)).scalars().all()
 
-    async def get_transaction_by_reference(self, reference: str) -> Transaction | None:
+    async def get_transaction_by_reference(self, reference: str, for_update: bool = False) -> Transaction | None:
         stmt = select(Transaction).where(Transaction.reference == reference)
+        if for_update:
+            stmt = stmt.with_for_update()
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
     async def get_saved_card_by_id(self, card_id: uuid.UUID) -> SavedCard | None:
